@@ -10,7 +10,7 @@ The whole run is defined in `config.json`. `MAIN_preprocessing.ipynb` turns it i
 - [Pipeline step by step](#pipeline-step-by-step-main_preprocessingipynb)
 - [Code structure](#code-structure)
 - [Standalone notebooks](#standalone-notebooks-notebooks)
-- [Template folders](#template-folders-00-template_mitgcm)
+- [Template folders](#template-folders-templates-mitgcm)
 - [Output folder](#output-folder)
 - [Conventions and how to extend](#conventions-and-how-to-extend)
 
@@ -84,7 +84,7 @@ Imports the libraries, loads `config.json` and computes the start and end of the
 
 ### 2. Prepare the output folder (`run_folder.prepare_output_folder`)
 - Empties `2-preprocessing-outputs/<SimulationName>/`. Other simulations are not touched.
-- Copies each folder of `TemplateFolder` from `00-template_mitgcm/`, in order. A later template overwrites the files of an earlier one.
+- Copies each folder of `TemplateFolder` from `templates-MITgcm/`, in order. A later template overwrites the files of an earlier one.
 - Writes `metadata_simulation.txt`, a copy of the settings used.
 
 ### 3. Grid and bathymetry (`run_folder.copy_grid_and_bathy`, `grid_and_bathy.get_grid`)
@@ -108,7 +108,7 @@ Copies the grid files (`.npy`, `.json`, `.csv`) to `grid/` and the bathymetry to
 - In both cases, salinity is a constant default (0.03).
 
 ### 6. Fill the template files (`run_folder`)
-The copied template files contain `!placeholder!` tokens. Only the copies in the output folder are filled, never the files in `00-template_mitgcm/`.
+The copied template files contain `!placeholder!` tokens. Only the copies in the output folder are filled, never the files in `templates-MITgcm/`.
 - `fill_run_config_templates`:
   - `data.cal`: reference date
   - `data.exf`: start date, albedo, wind drag coefficients
@@ -139,7 +139,7 @@ The MITgcm folder can be overridden with `MITGCM_ROOTDIR=/path/to/MITgcm bash la
 preprocessing-mitgcm/
 ├── MAIN_preprocessing.ipynb    main pipeline (sections 1-9 above)
 ├── config.json                 run settings
-├── 00-template_mitgcm/         MITgcm template folders (see below)
+├── templates-MITgcm/           MITgcm template folders (see below)
 ├── lzt_config/
 │   └── config.py               ConfigObject, Paths, River, resolve_path
 ├── lzt_utils/
@@ -192,7 +192,7 @@ These are one-off steps that produce the inputs MAIN reads, plus some checks. Ea
 
 ---
 
-## Template folders (`00-template_mitgcm/`)
+## Template folders (`templates-MITgcm/`)
 Each folder holds the MITgcm files of one feature. `TemplateFolder` lists the folders to combine.
 
 | Folder | Content |
@@ -202,8 +202,7 @@ Each folder holds the MITgcm files of one feature. `TemplateFolder` lists the fo
 | `obcs` | open boundaries (`data.obcs`, `data.pkg`, `data.exf`), needed for rivers |
 | `crop_results` | postprocessing scripts that extract surface and station results |
 | `crop_results_advanced` | extra postprocessing (heat fluxes, KPP, statistics) |
-| `zug` | Zug-specific `data` and `data.kpp` |
-| `heat_fluxes_analysis`, `swirl`, `postprocessing`, `EOF_synthetic`, `bk_config` | specific analyses and older setups |
+| `heat_fluxes_analysis`, `swirl`, `postprocessing`, `EOF_synthetic` | specific analyses and older setups |
 
 ---
 

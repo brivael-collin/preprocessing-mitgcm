@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 # Folder holding the template folders that are overlaid to build a simulation folder
-TEMPLATE_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), '00-template_mitgcm')
+TEMPLATE_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'templates-MITgcm')
 
 
 def remove_all_files_and_folders(FolderPath):

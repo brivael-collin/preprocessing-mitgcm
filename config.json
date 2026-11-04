@@ -16,7 +16,7 @@
 
   "AvailableLakes": ["zug", "dummy_rectangle"],
 
-  "AvailableTemplates": ["default", "exch2", "obcs", "crop_results", "crop_results_advanced", "heat_fluxes_analysis", "postprocessing", "swirl", "zug", "EOF_synthetic"],
+  "AvailableTemplates": ["default", "exch2", "obcs", "crop_results", "crop_results_advanced", "heat_fluxes_analysis", "postprocessing", "swirl", "EOF_synthetic"],
 
   "Calibration": {
     "Default": {
