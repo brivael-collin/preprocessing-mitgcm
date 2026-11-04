@@ -4,6 +4,8 @@
 export $(cat my_env.txt | xargs)
 
 OUTPUT_DIR="../outputs"
+# Number of MPI processes (Px * Py of code/SIZE.h), e.g. NB_CORES=33 bash run_loop_synthetic_events.sh
+NB_CORES=${NB_CORES:?set NB_CORES to the number of cores}
 
 # Correct Bash array syntax
 DATES=(
@@ -43,7 +45,7 @@ do
     sed -i "s|fileName.*=.*|fileName(1) = '${OUTPUT_DIR}/outputs_${date}/3Dsnaps',|" data.diagnostics
     
     echo "=== Loop ${date}: Starting MITgcm at $(date '+%Y-%m-%d %H:%M:%S') ==="
-    srun --ntasks=929 mitgcmuv || {
+    mpirun -np "${NB_CORES}" ./mitgcmuv || {
         echo "MITgcm failed at loop $i"
         exit 1
     }

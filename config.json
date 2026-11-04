@@ -1,164 +1,143 @@
 {
-  "data_root": "C:/Users/collinbr/Desktop/LZT_datafiles",
+  "DataRoot": "C:/Users/collinbr/Desktop/LZT_datafiles",
 
-  "current_project": {
-    "simulation_name": "zug_100m_salt",
-    "lake_name": "zug",
-    "grid_config_name": "100m",
-    "start_date": "20250101",
-    "end_date": "20260301",
-    "reference_date": "20250101",
-    "weather_model": "icon",
-    "computer_config": "kball_laken",
-    "template_folder": ["default", "exch2", "obcs", "crop_results"],
-    "initialization_type": "simstrat",
-    "with_rivers": false
+  "CurrentProject": {
+    "SimulationName": "zug_100m_salt",
+    "LakeName": "zug",
+    "GridConfigName": "100m",
+    "StartDate": "20250101",
+    "EndDate": "20250301",
+    "ReferenceDate": "20250101",
+    "WeatherModel": "icon",
+    "TemplateFolder": ["default", "exch2", "obcs", "crop_results"],
+    "InitializationType": "simstrat",
+    "WithRivers": false
   },
 
-  "available_lakes": ["zug", "dummy_rectangle"],
+  "AvailableLakes": ["zug", "dummy_rectangle"],
 
-  "available_templates": ["default", "exch2", "obcs", "crop_results", "crop_results_advanced", "heat_fluxes_analysis", "postprocessing", "swirl", "zug", "EOF_synthetic"],
+  "AvailableTemplates": ["default", "exch2", "obcs", "crop_results", "crop_results_advanced", "heat_fluxes_analysis", "postprocessing", "swirl", "zug", "EOF_synthetic"],
 
-  "available_compute_config": ["cscs_eiger", "kball_laken"],
-
-  "calibration": {
-    "default": {
-      "secchi": [6.8, 6.5, 6.3, 6.0, 5.0, 4.5, 4.0, 4.0, 4.0, 4.0, 6.0, 6.0],
-      "a_lw": 1,
-      "viscAz": 1e-06,
-      "diffKzT": 1.4e-07,
+  "Calibration": {
+    "Default": {
+      "Secchi": [6.8, 6.5, 6.3, 6.0, 5.0, 4.5, 4.0, 4.0, 4.0, 4.0, 6.0, 6.0],
+      "ALw": 1,
+      "viscAz": 1e-6,
+      "diffKzT": 1.4e-7,
       "viscC2smag": 0.7,
       "viscAhGrid": 0.00015142478199073935,
       "diffKhT": 0.24,
       "exf_albedo": 0.066,
       "cdrag_1": 0.0027,
       "cdrag_2": 0.000142,
-      "cdrag_3": 7.64e-05,
+      "cdrag_3": 7.64e-5,
       "bottomDragQuadratic": 0.0025
     },
     "zug": {
-      "secchi": [7.2, 8.1, 5.6, 3.0, 7.5, 6.1, 3.9, 3.1, 4.1, 4.5, 5.0, 5.5],
+      "Secchi": [7.2, 8.1, 5.6, 3.0, 7.5, 6.1, 3.9, 3.1, 4.1, 4.5, 5.0, 5.5],
       "diffKhT": 0.24,
-      "viscAz": 1e-06,
-      "diffKzT": 1.4e-07,
+      "viscAz": 1e-6,
+      "diffKzT": 1.4e-7,
       "viscAhGrid": 0.0125,
       "viscC2smag": 0.7,
       "bottomDragQuadratic": 0.0025
     },
     "dummy_rectangle": {
-      "secchi": [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0],
-      "a_lw": 0.9
+      "Secchi": [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0],
+      "ALw": 0.9
     }
   },
 
-  "grid_config": {
+  "GridConfig": {
     "zug": {
-      "shoreline_path": "preprocessing-inputs/zug_shoreline.txt",
-      "raw_bathy_path": "preprocessing-inputs/merged_swissbathy3d.tif",
-      "no_data_raw_bathy": -9999,
-      "lake_altitude": 417,
+      "ShorelinePath": "1-preprocessing-inputs/zug_shoreline.txt",
+      "RawBathyPath": "1-preprocessing-inputs/merged_swissbathy3d.tif",
+      "NoDataRawBathy": -9999,
+      "LakeAltitude": 417,
       "100m": {
-        "grid_resolution": 100,
-        "time_step": 15,
-        "x0": 2678200,
-        "y0": 1212300,
-        "rotation": 6.5,
+        "GridResolution": 100,
+        "TimeStep": 15,
+        "X0": 2678200,
+        "Y0": 1212300,
+        "Rotation": 6.5,
         "Nx": 50,
         "Ny": 140,
-        "grid_folder_path": "preprocessing-inputs",
-        "bathy_path": "preprocessing-inputs/bathy.bin"
+        "GridFolderPath": "1-preprocessing-inputs",
+        "BathyPath": "1-preprocessing-inputs/bathy.bin"
       }
     },
     "dummy_rectangle": {
-      "shoreline_path": "preprocessing-inputs/dummy_rectangle/shoreline_epsg2056.txt",
-      "raw_bathy_path": "preprocessing-inputs/dummy_rectangle/dummy_bathy.tif",
-      "no_data_raw_bathy": -9999,
-      "lake_altitude": 0,
+      "ShorelinePath": "1-preprocessing-inputs/dummy_rectangle/shoreline_epsg2056.txt",
+      "RawBathyPath": "1-preprocessing-inputs/dummy_rectangle/dummy_bathy.tif",
+      "NoDataRawBathy": -9999,
+      "LakeAltitude": 0,
       "200m": {
-        "grid_resolution": 200,
-        "time_step": 30,
-        "x0": 2600000,
-        "y0": 1130000,
-        "x1": 2605000,
-        "y1": 1130000,
-        "rotation": 0,
+        "GridResolution": 200,
+        "TimeStep": 30,
+        "X0": 2600000,
+        "Y0": 1130000,
+        "X1": 2605000,
+        "Y1": 1130000,
+        "Rotation": 0,
         "Nx": 25,
         "Ny": 15,
-        "grid_folder_path": "preprocessing-inputs/dummy_rectangle/200m",
-        "bathy_path": "preprocessing-inputs/dummy_rectangle/200m/bathy.bin"
+        "GridFolderPath": "1-preprocessing-inputs/dummy_rectangle/200m",
+        "BathyPath": "1-preprocessing-inputs/dummy_rectangle/200m/bathy.bin"
       }
     }
   },
 
-  "river_config": {
+  "RiverConfig": {
     "dummy_rectangle": {
       "south-west-corner": {
-        "bafu_id": 2009,
-        "discharge_variable_name": "AbflussPneumatikunten",
-        "temperature_variable_name": "Wassertemperatur1",
-        "coordinates_lake_point": {
-          "200m": [2600500, 1130500]
-        },
-        "direction": "south",
-        "in_or_out": "in",
-        "river_depth": 3
+        "BafuId": 2009,
+        "DischargeVariableName": "AbflussPneumatikunten",
+        "TemperatureVariableName": "Wassertemperatur1",
+        "CoordinatesLakePoint": { "200m": [2600500, 1130500] },
+        "Direction": "south",
+        "InOrOut": "in",
+        "RiverDepth": 3
       }
     }
   },
 
-  "weather_model_config": {
+  "WeatherModelConfig": {
     "icon": {
-      "base_url": "https://alplakes-internal-api.eawag.ch/meteoswiss/icon/area/reanalysis/kenda-ch1",
-      "raw_results_from_api_folder": "preprocessing-inputs/raw_from_alplakes_api",
-      "buffer": 0.02,
-      "type": "reanalysis"
+      "BaseUrl": "https://alplakes-internal-api.eawag.ch/meteoswiss/icon/area/reanalysis/kenda-ch1",
+      "RawResultsFromApiFolder": "1-preprocessing-inputs/raw_from_alplakes_api",
+      "Buffer": 0.02,
+      "Type": "reanalysis"
     },
     "icon_forecast": {
-      "base_url": "https://alplakes-internal-api.eawag.ch/meteoswiss/icon/area/forecast/icon-ch2-eps",
-      "raw_results_from_api_folder": "preprocessing-inputs/raw_from_alplakes_api_icon_forecast",
-      "buffer": 0.02,
-      "type": "forecast"
+      "BaseUrl": "https://alplakes-internal-api.eawag.ch/meteoswiss/icon/area/forecast/icon-ch2-eps",
+      "RawResultsFromApiFolder": "1-preprocessing-inputs/raw_from_alplakes_api_icon_forecast",
+      "Buffer": 0.02,
+      "Type": "forecast"
     },
     "cosmo": {
-      "base_url": "https://alplakes-internal-api.eawag.ch/meteoswiss/cosmo/area/reanalysis/VNXQ34",
-      "raw_results_from_api_folder": "preprocessing-inputs/raw_from_alplakes_api_cosmo",
-      "buffer": 0.02,
-      "type": "reanalysis"
+      "BaseUrl": "https://alplakes-internal-api.eawag.ch/meteoswiss/cosmo/area/reanalysis/VNXQ34",
+      "RawResultsFromApiFolder": "1-preprocessing-inputs/raw_from_alplakes_api_cosmo",
+      "Buffer": 0.02,
+      "Type": "reanalysis"
     },
     "continuous_reanalysis": {
-      "base_url": "https://alplakes-internal-api.eawag.ch/meteoswiss/icon/area/reanalysis/kenda-ch1",
-      "raw_results_from_api_folder": "preprocessing-inputs/raw_from_alplakes_api_continuous_reanalysis",
-      "buffer": 0.02,
-      "type": "reanalysis"
+      "BaseUrl": "https://alplakes-internal-api.eawag.ch/meteoswiss/icon/area/reanalysis/kenda-ch1",
+      "RawResultsFromApiFolder": "1-preprocessing-inputs/raw_from_alplakes_api_continuous_reanalysis",
+      "Buffer": 0.02,
+      "Type": "reanalysis"
     }
   },
 
-  "computer_config": {
-    "cscs_eiger": {
-      "endian_type": "big_endian",
-      "results_folder": "..",
-      "zug": {
-        "100m": {
-          "Px": 5,
-          "Py": 7
-        }
-      }
+  "ComputerConfig": {
+    "Name": "kball_laken",
+    "ResultsFolder": "/storage/alplakes_test",
+    "MitgcmRootDir": "$HOME/MITgcm-checkpoint67z",
+    "BuildOptions": "linux_amd64_gfortran",
+    "zug": {
+      "100m": { "Px": 5, "Py": 7 }
     },
-    "kball_laken": {
-      "endian_type": "big_endian",
-      "results_folder": "/storage/alplakes_test",
-      "zug": {
-        "100m": {
-          "Px": 5,
-          "Py": 7
-        }
-      },
-      "dummy_rectangle": {
-        "200m": {
-          "Px": 5,
-          "Py": 3
-        }
-      }
+    "dummy_rectangle": {
+      "200m": { "Px": 5, "Py": 3 }
     }
   }
 }
