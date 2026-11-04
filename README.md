@@ -19,7 +19,7 @@ The whole run is defined in `config.json`. `MAIN_preprocessing.ipynb` turns it i
 ## Quick start
 1. **Python environment** (once). Create it outside the repo, because the repo folder does not allow the symlinks a venv needs:
    ```bash
-   uv venv ~/.venvs/lzt && uv pip install --python ~/.venvs/lzt/bin/python -r ../requirements.txt
+   uv venv ~/.venvs/lzt && uv pip install --python ~/.venvs/lzt/bin/python -r ../misc/requirements.txt
    ```
    Use the Jupyter kernel "Python (LakeZug)".
 2. **Inputs** (once per lake and grid). The grid, bathymetry and land-tile files must exist in `1-preprocessing-inputs`. Create them with the notebooks in `notebooks/grid_and_bathy/` (see [Standalone notebooks](#standalone-notebooks-notebooks)).

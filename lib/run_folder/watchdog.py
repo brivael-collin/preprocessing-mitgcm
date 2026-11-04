@@ -1,7 +1,7 @@
 """Watchdog script that follows the simulation on the remote computer and sends an email when it ends."""
 import os
 
-# Name of the local download script (code/kball-transfer/, copied by the user to the Desktop), quoted in the emails
+# Name of the local download script (code/misc/kball-transfer/, copied by the user to the Desktop), quoted in the emails
 FETCH_BAT_NAME = 'Fetch results from kball_laken.bat'
 
 

@@ -7,8 +7,8 @@ def write_launch_script(OutputFolder, Config, NbCores, MitgcmResultsFolder, NbMa
     Write launch_simulation.sh at the root of the simulation folder. kball_laken mirrors the local data layout:
     the simulation folder is copied to <remote root>/2-preprocessing-outputs/, and from <remote root>
     'bash 2-preprocessing-outputs/<SimulationName>/launch_simulation.sh' compiles MITgcm, prepares the run folder
-    and starts the simulation in the background with mpirun (results in <remote root>/3-MITgcm-outputs/). Commands follow tips/PenseBete_MITgcmAnne.txt and
-    tips/mitgcm_working_doc.pdf.
+    and starts the simulation in the background with mpirun (results in <remote root>/3-MITgcm-outputs/). Commands follow misc/tips/PenseBete_MITgcmAnne.txt and
+    misc/tips/mitgcm_working_doc.pdf.
     Inputs:
       OutputFolder (str)        - simulation folder (contains code/, build/, run/, run_config/)
       Config (ConfigObject)     - run settings (MitgcmRootDir, BuildOptions, simulation and computer names)
