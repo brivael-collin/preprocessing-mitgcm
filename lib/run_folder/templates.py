@@ -108,6 +108,7 @@ def write_data_config_files(DataConfigPath, InitialTemperature, InitialSalt, Sta
         '!viscAhGrid!': Config.viscAhGrid,
         '!diffKhT!': Config.diffKhT,
         '!bottomDragQuadratic!': Config.bottomDragQuadratic,
+        '!monitor_freq!': Config.Watchdog['MonitorFreq'],  # statistics in STDOUT.0000, read by watchdog.sh
     }
     for Token, Value in Replacements.items():
         modify_arguments(Token, Value, DataConfigPath)

@@ -81,8 +81,11 @@
  dumpFreq            = 0
 
 # interval to write monitor output (s).
- monitorFreq         = 0
- monitorSelect       = 1
+ monitorFreq         = !monitor_freq!
+ monitorSelect       = 2
+# write the monitor statistics both to NetCDF (monitor_mnc in data.mnc) and to STDOUT.0000 (read by watchdog.sh);
+# without it, monitor_mnc switches off the STDOUT output (pkg/mnc/mnc_readparms.F)
+ outputTypesInclusive = .TRUE.
  
 # Pickup/restart options. We will also quietly track the iteration number.
 #nIter0              = 0

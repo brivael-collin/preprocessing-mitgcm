@@ -49,11 +49,12 @@ Paths in `config.json` are relative to `DataRoot`. The code accesses them only t
 ## Configuration (`config.json`)
 `ConfigObject` (`lzt_config/config.py`) reads the `CurrentProject` block. It then looks up everything else by lake, grid and weather-model name, and exposes all of it as attributes (`Config.TimeStep`, `Config.Px`, `Config.Paths.GridFolderPath`, ...).
 
-**`CurrentProject`**: what to run
+**`CurrentProject`**: what to run. The simulation name (name of the output folders) is built automatically from it:
+`<LakeName>_<GridConfigName>_<StartDate>-<EndDate>[_ref<ReferenceDate>]_<WeatherModel>[_<SimulationLabel>]`, e.g. `zug_100m_20250101-20250301_icon`. The reference date appears only when it differs from the start date.
 
 | Key | Example | Meaning |
 |---|---|---|
-| `SimulationName` | `zug_100m_salt` | name of the output folder |
+| `SimulationLabel` | `""` or `lowdrag` | optional free label appended to the simulation name |
 | `LakeName` | `zug` | key used in all the lookup blocks below |
 | `GridConfigName` | `100m` | grid inside `GridConfig[lake]` |
 | `StartDate`, `EndDate` | `20250101`, `20250301` | simulated period (`YYYYMMDD`) |

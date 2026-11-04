@@ -43,8 +43,43 @@ BUILD_OPTIONS="$MITGCM_ROOTDIR/tools/build_options/{Config.BuildOptions}"
 
 # 1. Compile MITgcm with the code of this simulation
 echo "=== Compiling MITgcm ($(date '+%Y-%m-%d %H:%M:%S')) ==="
+
+# 1a. Clean build folder (files of a previous, possibly failed, compilation would be reused by make)
 cd "$SIM_DIR/build"
-"$MITGCM_ROOTDIR/tools/genmake2" -mods ../code -mpi -enable=mnc -of "$BUILD_OPTIONS"
+find . -mindepth 1 ! -name READ_ME.md -delete
+
+# 1b. MPI header folder (mpif.h): the build options only pass it to the compiler through MPI_INC_DIR.
+# Taken from the MPI compiler wrapper (OpenMPI: --showme:incdirs, MPICH: -show), else searched in /usr and /opt
+if [ -z "${{MPI_INC_DIR:-}}" ]; then
+  for Dir in $(mpif77 --showme:incdirs 2>/dev/null) $(mpif77 -show 2>/dev/null | tr ' ' '\\n' | sed -n 's/^-I//p'); do
+    if [ -f "$Dir/mpif.h" ]; then MPI_INC_DIR="$Dir"; break; fi
+  done
+fi
+if [ -z "${{MPI_INC_DIR:-}}" ]; then
+  MPI_INC_DIR="$(dirname "$(find /usr /opt -name mpif.h -print -quit 2>/dev/null)")"
+fi
+[ -f "$MPI_INC_DIR/mpif.h" ] || {{ echo "mpif.h not found: set MPI_INC_DIR=/path/to/mpi/include"; exit 1; }}
+export MPI_INC_DIR
+echo "MPI headers: $MPI_INC_DIR"
+
+# 1c. Build options: copy of the MITgcm file, adapted to recent compilers (the MITgcm folder is not modified)
+#   - gcc >= 14 rejects old C code (e.g. sprintf without stdio.h in setdir.c): turn these errors back into warnings
+#   - gfortran >= 10 rejects MPI calls with different argument types: -fallow-argument-mismatch
+OPTFILE="$SIM_DIR/build/{Config.BuildOptions}_compat"
+cp "$BUILD_OPTIONS" "$OPTFILE"
+cat >> "$OPTFILE" << 'EOF'
+
+# Added by launch_simulation.sh: compatibility of old MITgcm checkpoints with recent compilers
+CFLAGS="$CFLAGS -Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-error=incompatible-pointer-types -Wno-error=int-conversion"
+EOF
+GFORTRAN_MAJOR="$(mpif77 -dumpversion | cut -d. -f1)"
+if [ "$GFORTRAN_MAJOR" -ge 10 ]; then
+  echo 'FFLAGS="$FFLAGS -fallow-argument-mismatch"; F90FLAGS="$F90FLAGS -fallow-argument-mismatch"' >> "$OPTFILE"
+fi
+echo "Build options: $OPTFILE (gfortran $GFORTRAN_MAJOR)"
+
+# 1d. Makefile, dependencies and compilation
+"$MITGCM_ROOTDIR/tools/genmake2" -mods ../code -mpi -enable=mnc -of "$OPTFILE"
 make depend
 make -j {NbMakeJobs}
 
@@ -65,17 +100,41 @@ RESULTS_DIR="$(cd "{MitgcmResultsFolder}" && pwd)"
 echo "Results folder: $RESULTS_DIR"
 
 # 4. Start the simulation on {NbCores} cores
-# In the background and detached from the terminal (nohup, disown), so the terminal can be closed
+# In the background and detached from the terminal (setsid: own session, nohup, disown), so the terminal can be
+# closed and Ctrl+C on the progress bar does not reach MITgcm. The PID is saved for progress.sh
 echo "=== Starting MITgcm (mpirun, {NbCores} cores) ==="
-nohup mpirun -np {NbCores} ./mitgcmuv > output_{Config.SimulationName}.out 2>&1 < /dev/null &
+setsid nohup mpirun -np {NbCores} ./mitgcmuv > output_{Config.SimulationName}.out 2>&1 < /dev/null &
 PID=$!
 disown
+echo "$PID" > mitgcm.pid
+
+# 5. Watchdog (watchdog.sh): stops the run on NaN/unrealistic values and sends an email when the run ends.
+# Also detached from the terminal; its messages go to run/watchdog.log
+setsid nohup bash ../watchdog.sh "$PID" > watchdog.log 2>&1 < /dev/null &
+disown
+EMAIL="{Config.Watchdog['NotifyEmail']}"
+if [ -z "$EMAIL" ]; then
+  echo "Watchdog started, no email (NotifyEmail empty in config.json): see $SIM_DIR/run/watchdog.log"
+elif ! command -v mail > /dev/null; then
+  echo "Watchdog started, but no 'mail' command on this computer: see $SIM_DIR/run/watchdog.log"
+else
+  echo "Watchdog started: email to $EMAIL when the run ends or is stopped"
+fi
+
 echo "MITgcm started (PID $PID). Useful commands:"
-echo "  tail -f $SIM_DIR/run/output_{Config.SimulationName}.out    # follow the run"
+echo "  tail -f $SIM_DIR/run/STDOUT.0000    # follow the run (MITgcm log of the first core)"
 echo "  grep 'NORMAL END' $SIM_DIR/run/STDOUT.0000    # check that the run finished properly"
+echo "  cat $SIM_DIR/run/output_{Config.SimulationName}.out $SIM_DIR/run/STDERR.0000    # errors (mpirun and MITgcm)"
 echo "  ls $RESULTS_DIR/outputs    # results (3Dsnaps.*)"
 echo "  ps aux | grep mpirun    # list the running simulations"
-echo "  kill $PID    # stop this simulation"
+echo "  cat $SIM_DIR/run/watchdog.log    # watchdog messages"
+echo "  bash $SIM_DIR/progress.sh    # progress bar (shown below)"
+echo "  kill $PID    # stop this simulation (the watchdog then sends a FAILED email)"
+
+# 6. Progress bar until the end of the run (Ctrl+C or closing the terminal only stops the display)
+echo
+echo "=== Progress (Ctrl+C stops the display, not the simulation) ==="
+bash "$SIM_DIR/progress.sh"
 '''
     # Unix line endings (the script runs on Linux even if written on Windows), and executable
     ScriptPath = os.path.join(OutputFolder, 'launch_simulation.sh')

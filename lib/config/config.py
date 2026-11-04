@@ -93,7 +93,6 @@ class ConfigObject:
 
         # Run definition
         CurrentProject = Config['CurrentProject']
-        self.SimulationName = CurrentProject['SimulationName']
         self.LakeName = CurrentProject['LakeName']
         self.GridConfigName = CurrentProject['GridConfigName']
         self.StartDate = CurrentProject['StartDate']
@@ -103,6 +102,10 @@ class ConfigObject:
         self.TemplateFolder = CurrentProject['TemplateFolder']
         self.InitializationType = CurrentProject['InitializationType']
         self.WithRivers = CurrentProject['WithRivers']
+
+        # Simulation name, built from the settings above (+ optional free label), e.g. zug_100m_20250101-20250301_icon
+        self.SimulationLabel = CurrentProject.get('SimulationLabel', '')
+        self.SimulationName = self.build_simulation_name()
 
         # Lake characteristics
         LakeConfig = Config['GridConfig'][self.LakeName]
@@ -137,6 +140,7 @@ class ConfigObject:
         self.ResultsFolder = ComputerConfig['ResultsFolder']  # results folder on the remote computer
         self.MitgcmRootDir = ComputerConfig['MitgcmRootDir']  # MITgcm source folder on the remote computer
         self.BuildOptions = ComputerConfig['BuildOptions']    # file of MITgcm tools/build_options for genmake2
+        self.Watchdog = ComputerConfig['Watchdog']            # dict: NotifyEmail, CheckInterval, MonitorFreq, Limits
         self.Px = ComputerConfig[self.LakeName][self.GridConfigName]['Px']
         self.Py = ComputerConfig[self.LakeName][self.GridConfigName]['Py']
 
@@ -148,6 +152,27 @@ class ConfigObject:
 
         # Paths
         self.Paths = Paths(self.LakeName, LakeConfig, GridConfig, WeatherModelConfig, DataRoot)
+
+    def build_simulation_name(self):
+        """
+        Build the simulation name (name of the output folders) from the settings that define the run:
+        lake_grid_start-end[_ref<ReferenceDate>]_weather[_label], e.g. 'zug_100m_20250101-20250301_icon'.
+        The reference date is only included when it differs from the start date, the label only when not empty.
+        Input:
+          None - uses LakeName, GridConfigName, StartDate, EndDate, ReferenceDate (str, YYYYMMDD), WeatherModel and
+                 SimulationLabel (str) of the object
+        Output:
+          (str) - simulation name
+        """
+        Parts = [self.LakeName, self.GridConfigName, f'{self.StartDate}-{self.EndDate}']
+        # Reference date (time origin of MITgcm) only if it is not the start date
+        if self.ReferenceDate != self.StartDate:
+            Parts.append(f'ref{self.ReferenceDate}')
+        Parts.append(self.WeatherModel)
+        # Optional free label, to tell apart runs that differ only by calibration or templates
+        if self.SimulationLabel:
+            Parts.append(self.SimulationLabel)
+        return '_'.join(Parts)
 
     def write_metadata_to_file(self, OutputFilePath):
         """

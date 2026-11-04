@@ -2,7 +2,7 @@
   "DataRoot": "C:/Users/collinbr/Desktop/LZT_datafiles",
 
   "CurrentProject": {
-    "SimulationName": "zug_100m_salt",
+    "SimulationLabel": "",
     "LakeName": "zug",
     "GridConfigName": "100m",
     "StartDate": "20250101",
@@ -131,8 +131,15 @@
   "ComputerConfig": {
     "Name": "kball_laken",
     "ResultsFolder": "3-MITgcm-outputs",
-    "MitgcmRootDir": "$HOME/MITgcm-checkpoint67z",
+    "MitgcmRootDir": "$HOME/MITgcm-checkpoint67c",
     "BuildOptions": "linux_amd64_gfortran",
+    "Watchdog": {
+      "NotifyEmail": "brivael.collin@eawag.ch",
+      "CheckInterval": 60,
+      "MonitorFreq": 3600,
+      "Limits": { "ThetaMin": -5, "ThetaMax": 50, "SaltMin": -0.1, "SaltMax": 20,
+                  "UVelMax": 100, "WVelMax": 10, "CflMax": 5 }
+    },
     "zug": {
       "100m": { "Px": 5, "Py": 7 }
     },
