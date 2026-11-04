@@ -130,7 +130,7 @@
 
   "ComputerConfig": {
     "Name": "kball_laken",
-    "ResultsFolder": "/storage/alplakes_test",
+    "ResultsFolder": "3-MITgcm-outputs",
     "MitgcmRootDir": "$HOME/MITgcm-checkpoint67z",
     "BuildOptions": "linux_amd64_gfortran",
     "zug": {

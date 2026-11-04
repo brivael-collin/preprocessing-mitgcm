@@ -24,15 +24,22 @@ def get_run_times(Config):
 
 def get_mitgcm_results_folder(Config):
     """
-    Folder where MITgcm writes its results on the remote computer.
+    Folder where MITgcm writes its results on the remote computer, as seen from the run/ folder (MITgcm's
+    working directory). The remote computer mirrors the local data layout:
+      <remote root>/2-preprocessing-outputs/<SimulationName>/run   (MITgcm runs here)
+      <remote root>/<ResultsFolder>/<SimulationName>                (results, e.g. ResultsFolder = '3-MITgcm-outputs')
     Input:
-      Config (ConfigObject) - run settings (ResultsFolder of the computer, SimulationName)
+      Config (ConfigObject) - run settings (ResultsFolder of the computer, absolute or relative to the remote root;
+                              SimulationName)
     Output:
-      (str) - '<ResultsFolder>/<SimulationName>', or '..' (the simulation folder itself) if ResultsFolder is '..'
+      (str) - '<ResultsFolder>/<SimulationName>' if ResultsFolder is absolute, otherwise
+              '../../../<ResultsFolder>/<SimulationName>' (run/ -> simulation folder -> 2-preprocessing-outputs -> root)
     """
-    if Config.ResultsFolder == '..':
-        return str(PurePosixPath(Config.ResultsFolder))
-    return f'{PurePosixPath(Config.ResultsFolder)}/{Config.SimulationName}'
+    ResultsFolder = PurePosixPath(Config.ResultsFolder)
+    # Relative results folder: go up from run/ to the remote root (the folder the launch script is run from)
+    if not ResultsFolder.is_absolute():
+        ResultsFolder = PurePosixPath('../../..') / ResultsFolder
+    return f'{ResultsFolder}/{Config.SimulationName}'
 
 
 def fill_run_config_templates(Config, OutputFolder, MitgcmResultsFolder):
