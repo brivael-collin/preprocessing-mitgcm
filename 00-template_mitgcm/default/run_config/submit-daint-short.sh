@@ -16,5 +16,5 @@ export MPICH_GPU_SUPPORT_ENABLED=0
 srun --ntasks=${SLURM_NTASKS} ./mitgcmuv
 
 source activate mitgcm
-python extract_lexplore_results.py
+python extract_sta_results.py
 python extract_surface_results.py

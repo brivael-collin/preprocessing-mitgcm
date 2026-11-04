@@ -5,8 +5,8 @@ import os
 
 ds = xm.open_mdsdataset("!results_folder!", grid_dir="../run", ref_date="!formatted_ref_date!", prefix='3Dsnaps', delta_t=!time_step!, endian=">")
 
-x_sta = # geneva_lexplore: 49850, lucerne_walter: 10679.05
-y_sta = # geneva_lexplore: 18100, lucerne_walter: 9989.7777
+x_sta = # station x in local MITgcm coordinates [m] (to fill in for Lake Zug)
+y_sta = # station y in local MITgcm coordinates [m] (to fill in for Lake Zug)
 
 i_xc = np.argmin(np.abs(ds['XC'].values - x_sta))
 i_yc = np.argmin(np.abs(ds['YC'].values - y_sta))

@@ -2,16 +2,8 @@
 /bk_spring_binary_data/
 /surface_forcings/output/
 /landsat_processing/
-/grid_and_bathy/.ipynb_checkpoints/compare_grids-checkpoint.ipynb
 /surface_forcings/playground.ipynb
 
-/initial_conditions/simstrat_data/
 /rivers/bafu_data/*
-configs/__pycache__/*
-grid_and_bathy/__pycache__/*
-initial_conditions/__pycache__/*
-rivers/__pycache__/*
-run_preprocessing/__pycache__/*
-utils/__pycache__/*
-surface_forcings/__pycache__/*
 .idea/deployment.xml
+__pycache__/

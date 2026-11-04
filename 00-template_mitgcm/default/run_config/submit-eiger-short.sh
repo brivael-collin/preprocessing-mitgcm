@@ -19,5 +19,5 @@ mkdir -p ../to_delete
 
 srun --ntasks=${SLURM_NTASKS} ./mitgcmuv
 
-python extract_lexplore_results.py
+python extract_sta_results.py
 python extract_surface_results.py
