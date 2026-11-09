@@ -3,7 +3,8 @@
  &PARM01
  readBinaryPrec = 64
 
-# Initial temperature/salinity profiles using SHL2 data for Jan 15th, 2019.
+# Initial temperature [degC] / salinity [PSU] profiles, one value per layer (horizontally uniform):
+# by default from the Canton Zug CTD profile closest to the start date (Datalakes)
  tRef = 
     !initial_temperature!
     
@@ -13,8 +14,9 @@
 
 # Choice of computational models:
  nonHydrostatic      = .FALSE.
- saltStepping        = .FALSE.
+ saltStepping        = .TRUE.
  tempAdvScheme       = 33
+ saltAdvScheme       = 33
  staggerTimeStep     = .TRUE.
  implicitViscosity   = .TRUE.
  implicitDiffusion   = .TRUE.
@@ -48,6 +50,8 @@
  plotLevel                   = 0
  viscAz                      = !viscAz!
  diffKzT                     = !diffKzT!
+# Salt mixed like heat (turbulent diffusivities, same values)
+ diffKzS                     = !diffKzT!
 
 ###################################################
 # Parameters to be inferred in the data assimilation framework.
@@ -55,6 +59,7 @@
  viscC2smag          = !viscC2smag!
  viscAhGrid          = !viscAhGrid!
  diffKhT             = !diffKhT!
+ diffKhS             = !diffKhT!
  &
 
 ###################################################

@@ -6,11 +6,11 @@
     "LakeName": "zug",
     "GridConfigName": "100m",
     "StartDate": "20250101",
-    "EndDate": "20250301",
+    "EndDate": "20260101",
     "ReferenceDate": "20250101",
     "WeatherModel": "icon",
     "TemplateFolder": ["default", "exch2", "obcs", "crop_results"],
-    "InitializationType": "simstrat",
+    "InitializationType": "datalakes_ctd",
     "WithRivers": false
   },
 
@@ -96,9 +96,14 @@
         "CoordinatesLakePoint": { "200m": [2600500, 1130500] },
         "Direction": "south",
         "InOrOut": "in",
-        "RiverDepth": 3
+        "RiverDepth": 3,
+        "Salinity": 0.2
       }
     }
+  },
+
+  "DatalakesCtd": {
+    "zug": { "DatasetId": 1325, "FileId": 2893450, "Description": "CTD monitoring Lake Zug by Canton Zug, monthly profiles at the deepest point" }
   },
 
   "WeatherModelConfig": {

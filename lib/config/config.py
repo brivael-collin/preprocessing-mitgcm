@@ -2,6 +2,9 @@ import json
 import os
 import re
 
+# Salinity of the river inflows when config.json gives none for a river [PSU]
+DEFAULT_RIVER_SALINITY = 0.2
+
 
 def resolve_path(RawPath, DataRoot):
     """
@@ -51,6 +54,8 @@ class Paths:
         RawWeatherRoot = resolve_path(WeatherModelConfig['RawResultsFromApiFolder'], DataRoot)
         self.RawWeatherFolder = os.path.join(RawWeatherRoot, LakeName)
         self.SimstratFolder = os.path.join(self.PreprocessingInputs, 'simstrat_data', LakeName)
+        # Downloaded CTD profiles from Datalakes (initial temperature and salinity)
+        self.CtdFolder = os.path.join(self.PreprocessingInputs, 'datalakes_ctd', LakeName)
 
 
 class River:
@@ -70,6 +75,7 @@ class River:
         self.Direction = RiverConfig['Direction']
         self.InOrOut = RiverConfig['InOrOut']
         self.RiverDepth = RiverConfig['RiverDepth']
+        self.Salinity = RiverConfig.get('Salinity', DEFAULT_RIVER_SALINITY)  # salinity of the river water [PSU]
 
 
 # Calibration parameters: taken from config.json['Calibration'][lake], else from the 'Default' block
@@ -84,6 +90,20 @@ class ConfigObject:
     Input:
       ConfigFilePath (str) - path to config.json
     """
+    # Calibration parameters (CALIBRATION_KEYS), set by setattr in __init__: declared here so that
+    # the editor (Pylance) knows them and does not flag e.g. Config.Secchi as an unknown attribute
+    Secchi: list[float]          # monthly Secchi depths [m], January to December    ALw: float
+    exf_albedo: float
+    viscC2smag: float
+    viscAhGrid: float
+    diffKhT: float
+    viscAz: float
+    diffKzT: float
+    cdrag_1: float
+    cdrag_2: float
+    cdrag_3: float
+    bottomDragQuadratic: float
+
     def __init__(self, ConfigFilePath):
         with open(ConfigFilePath, 'r') as File:
             Config = json.load(File)
@@ -133,6 +153,9 @@ class ConfigObject:
         if self.WithRivers:
             RiverConfig = Config['RiverConfig'].get(self.LakeName, {})
             self.Rivers = [River(Name, Value, self.GridConfigName) for Name, Value in RiverConfig.items()]
+
+        # Datalakes CTD file of the lake (initial temperature and salinity), None if the lake has none
+        self.CtdFileId = Config.get('DatalakesCtd', {}).get(self.LakeName, {}).get('FileId')
 
         # Remote computer running MITgcm (kball_laken)
         ComputerConfig = Config['ComputerConfig']

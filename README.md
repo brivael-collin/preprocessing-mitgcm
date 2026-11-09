@@ -37,7 +37,7 @@ No data lives in the repo. All data is under `DataRoot` (set in `config.json`), 
 
 | Folder | Content | Access |
 |---|---|---|
-| `1-preprocessing-inputs/` | grid files (`x.npy`, `y.npy`, `lat_grid.npy`, `lon_grid.npy`, `dz.csv`, `parameters.json`), `bathy.bin`, `land_cores_Px*_Py*.txt`, raw bathymetry, shoreline, `raw_from_alplakes_api/<lake>/` (weather), `simstrat_data/<lake>/` | writable: missing weather and Simstrat files are downloaded here automatically |
+| `1-preprocessing-inputs/` | grid files (`x.npy`, `y.npy`, `lat_grid.npy`, `lon_grid.npy`, `dz.csv`, `parameters.json`), `bathy.bin`, `land_cores_Px*_Py*.txt`, raw bathymetry, shoreline, `raw_from_alplakes_api/<lake>/` (weather), `simstrat_data/<lake>/`, `datalakes_ctd/<lake>/` (CTD profiles) | writable: missing weather, Simstrat and CTD files are downloaded here automatically |
 | `2-preprocessing-outputs/` | one folder per simulation, written by this pipeline | rebuilt by MAIN |
 | `3-MITgcm-outputs/` | MITgcm results | **read-only** |
 | `4-postprocessing-outputs/` | results of `postprocessing-mitgcm/` | |
@@ -61,7 +61,7 @@ Paths in `config.json` are relative to `DataRoot`. The code accesses them only t
 | `ReferenceDate` | `20250101` | time origin of MITgcm (t = 0 s) |
 | `WeatherModel` | `icon` | key in `WeatherModelConfig` |
 | `TemplateFolder` | `["default", "exch2", "obcs", "crop_results"]` | template folders overlaid in this order |
-| `InitializationType` | `simstrat` or `pickup` | how the initial state is built |
+| `InitializationType` | `datalakes_ctd`, `simstrat` or `pickup` | how the initial state is built |
 | `WithRivers` | `false` | add rivers as open boundaries |
 
 **Lookup blocks**
@@ -103,9 +103,10 @@ Copies the grid files (`.npy`, `.json`, `.csv`) to `grid/` and the bathymetry to
   - `lwdown`: longwave radiation, computed with the calibration factor `ALw`
 
 ### 5. Initial conditions (`initial_conditions.build_initial_conditions`)
-- `simstrat`: takes the Alplakes Simstrat temperature profile closest to the start date and interpolates it to the model layers. The profile is downloaded into `1-preprocessing-inputs/simstrat_data/<lake>/` if missing.
-- `pickup`: restarts from a MITgcm pickup file. The pickup number is the number of time steps since the reference date, and the temperature passed to MITgcm is only a placeholder.
-- In both cases, salinity is a constant default (0.03).
+- `datalakes_ctd` (default): takes the temperature and salinity of the CTD profile closest to the start date and interpolates them to the model layers. The profiles are the Canton Zug monthly monitoring at the deepest point (Datalakes dataset 1325, file set in the `DatalakesCtd` block of `config.json`), downloaded once into `1-preprocessing-inputs/datalakes_ctd/<lake>/`. A warning is printed if the closest profile is more than 31 days from the start date.
+- `simstrat`: takes the Alplakes Simstrat temperature profile closest to the start date and interpolates it to the model layers. The profile is downloaded into `1-preprocessing-inputs/simstrat_data/<lake>/` if missing. Simstrat has no salinity, so salinity comes from the CTD profile.
+- `pickup`: restarts from a MITgcm pickup file. The pickup number is the number of time steps since the reference date, and the temperature and salinity passed to MITgcm are only placeholders.
+- Salinity evolves during the run (`saltStepping = .TRUE.` in `run_config/data`, with `diffKzS`/`diffKhS` equal to the temperature diffusivities and `saltAdvScheme = 33`), and `SALT` is in the 3D snapshots. River inflows get a constant salinity (`Salinity` per river in `RiverConfig`, default 0.2 PSU).
 
 ### 6. Fill the template files (`run_folder`)
 The copied template files contain `!placeholder!` tokens. Only the copies in the output folder are filled, never the files in `templates-MITgcm/`.
@@ -159,7 +160,7 @@ preprocessing-mitgcm/
 ├── initial_conditions/
 │   ├── profiles.py             build_initial_conditions, profile -> model layers
 │   ├── simstrat.py             download and read Alplakes Simstrat profiles
-│   └── datalakes.py            Datalakes (Eawag) measured profiles, not used by MAIN
+│   └── datalakes.py            download and read Datalakes CTD profiles (temperature, salinity)
 ├── rivers/
 │   └── rivers.py               river open boundaries: obcs config and binaries
 └── notebooks/                  standalone one-off notebooks (see below)

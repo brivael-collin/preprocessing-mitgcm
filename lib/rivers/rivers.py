@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from lib.config.config import DEFAULT_RIVER_SALINITY
 from lib.grid_and_bathy import convert_point_coord_to_mitgcm_coord, get_dz_grid
 from lib.utils.http import try_download
 from lib.utils.io import modify_arguments
@@ -52,6 +53,7 @@ def build_river_config(Config, OutputDir, SaveFiles=True):
             'boundary_direction': River.Direction,
             'in_or_out': River.InOrOut,
             'depth': River.RiverDepth,
+            'salinity': River.Salinity,
         })
 
     # Open boundary settings of data.obcs, boundary by boundary (MITgcm indices start at 1)
@@ -70,9 +72,10 @@ def build_river_config(Config, OutputDir, SaveFiles=True):
             Initial = Direction[0].upper()
             ObsPathString += (f"OB{Initial}{Settings['Velocity']}File = "
                               f"'../binary_data/bc_{Direction}_{Settings['Velocity']}.bin'\n")
-            # Temperature of the inflowing water
+            # Temperature and salinity of the inflowing water
             if RiverDict['in_or_out'] == 'in':
                 ObsPathString += f"OB{Initial}TFile = '../binary_data/bc_{Direction}_temp.bin'\n"
+                ObsPathString += f"OB{Initial}SFile = '../binary_data/bc_{Direction}_salt.bin'\n"
 
     if SaveFiles:
         # Fill data.obcs (without the last line break) and save the river list for build_river_binaries
@@ -227,8 +230,9 @@ def define_direction_specific_variables(Config, Direction):
 def write_river_binaries(BinaryDataFolder, Direction, VelocityVariable, DateList, DzGrid, BoundaryLength,
                          BoundaryRivers):
     """
-    Append the velocity and temperature of all rivers of one boundary to the binary boundary condition files
-    bc_{Direction}_{u or v}.bin and bc_{Direction}_temp.bin (big-endian float64, one (z, boundary) slice per time).
+    Append the velocity, temperature and salinity of all rivers of one boundary to the binary boundary condition
+    files bc_{Direction}_{u or v}.bin, bc_{Direction}_temp.bin and bc_{Direction}_salt.bin (big-endian float64,
+    one (z, boundary) slice per time).
     Inputs:
       BinaryDataFolder (str)      - folder of the binary files
       Direction (str)             - boundary: 'north', 'south', 'east' or 'west'
@@ -237,25 +241,30 @@ def write_river_binaries(BinaryDataFolder, Direction, VelocityVariable, DateList
       DzGrid (np.ndarray)         - thickness of each vertical layer [m]
       BoundaryLength (int)        - number of cells along the boundary
       BoundaryRivers (list[dict]) - for each river: 'horizontal_idx', 'max_z_idx', 'velocity' and 'temperature'
-                                    (one value or profile per time)
+                                    (one value or profile per time), and 'salinity' (constant [PSU])
     Output:
       None - files appended
     """
     VelocityPath = f'{BinaryDataFolder}/bc_{Direction}_{VelocityVariable}.bin'
     TemperaturePath = f'{BinaryDataFolder}/bc_{Direction}_temp.bin'
+    SaltPath = f'{BinaryDataFolder}/bc_{Direction}_salt.bin'
 
-    with open(VelocityPath, 'ab') as VelocityFile, open(TemperaturePath, 'ab') as TemperatureFile:
+    with (open(VelocityPath, 'ab') as VelocityFile, open(TemperaturePath, 'ab') as TemperatureFile,
+          open(SaltPath, 'ab') as SaltFile):
         for i in range(len(DateList)):
             Velocities = np.zeros((len(DzGrid), BoundaryLength), dtype='>f8')
             Temperatures = np.zeros((len(DzGrid), BoundaryLength), dtype='>f8')
+            Salts = np.zeros((len(DzGrid), BoundaryLength), dtype='>f8')
             # Each river fills the layers from the surface to its depth, in the cell(s) of its mouth
             for BoundaryRiver in BoundaryRivers:
                 Layers = slice(0, BoundaryRiver['max_z_idx'] + 1)
                 Velocities[Layers, BoundaryRiver['horizontal_idx']] = BoundaryRiver['velocity'][i]
                 Temperatures[Layers, BoundaryRiver['horizontal_idx']] = BoundaryRiver['temperature'][i]
+                Salts[Layers, BoundaryRiver['horizontal_idx']] = BoundaryRiver['salinity']
 
             Velocities.tofile(VelocityFile)
             Temperatures.tofile(TemperatureFile)
+            Salts.tofile(SaltFile)
 
 
 def build_river_binaries(Config, OutputDir):
@@ -266,7 +275,8 @@ def build_river_binaries(Config, OutputDir):
       Config (ConfigObject) - run settings
       OutputDir (str)       - folder where the binary files are written
     Output:
-      None - bc_{north,south,east,west}_{u or v}.bin and bc_*_temp.bin written for the boundaries with rivers
+      None - bc_{north,south,east,west}_{u or v}.bin, bc_*_temp.bin and bc_*_salt.bin written for the boundaries
+             with rivers
     """
     RiverConfig = pd.read_json(os.path.join(Config.Paths.GridFolderPath, 'river_dicts.json'))
     DateList = pd.date_range(Config.StartDate, Config.EndDate, freq='1h')
@@ -287,7 +297,10 @@ def build_river_binaries(Config, OutputDir):
             BoundaryRivers.append({'horizontal_idx': River[IndexName],
                                    'max_z_idx': IdxMaxZRiver,
                                    'velocity': Factor * np.array(Velocity),
-                                   'temperature': get_formatted_temperature(Config, River, DateList)})
+                                   'temperature': get_formatted_temperature(Config, River, DateList),
+                                   # Constant river salinity (river_dicts.json written before 'salinity' existed:
+                                   # default value)
+                                   'salinity': River.get('salinity', DEFAULT_RIVER_SALINITY)})
 
         if BoundaryRivers:
             write_river_binaries(OutputDir, Direction, VelocityVariable, DateList, DzGrid, BoundaryLength,
