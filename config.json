@@ -130,6 +130,7 @@
 
   "ComputerConfig": {
     "Name": "kball_laken",
+    "RemoteRoot": "/storage/lake_zug_transport",
     "ResultsFolder": "3-MITgcm-outputs",
     "MitgcmRootDir": "$HOME/MITgcm-checkpoint67c",
     "BuildOptions": "linux_amd64_gfortran",

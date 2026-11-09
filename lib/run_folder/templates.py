@@ -6,6 +6,10 @@ from pathlib import PurePosixPath
 
 from lib.utils.io import modify_arguments
 
+# Symlink created in run/ by launch_simulation.sh, pointing to the absolute results folder. The namelists use it
+# because MITgcm truncates longer paths (diagnostics fileName is CHARACTER*80 in checkpoint67c)
+RESULTS_LINK = 'results'
+
 
 def get_run_times(Config):
     """
@@ -24,21 +28,19 @@ def get_run_times(Config):
 
 def get_mitgcm_results_folder(Config):
     """
-    Folder where MITgcm writes its results on the remote computer, as seen from the run/ folder (MITgcm's
-    working directory). The remote computer mirrors the local data layout:
-      <remote root>/2-preprocessing-outputs/<SimulationName>/run   (MITgcm runs here)
-      <remote root>/<ResultsFolder>/<SimulationName>                (results, e.g. ResultsFolder = '3-MITgcm-outputs')
+    Absolute folder where MITgcm writes its results on the remote computer. The remote data folder RemoteRoot
+    (e.g. /storage/lake_zug_transport) mirrors the local data layout:
+      <RemoteRoot>/2-preprocessing-outputs/<SimulationName>/run   (MITgcm runs here)
+      <RemoteRoot>/<ResultsFolder>/<SimulationName>                (results, e.g. ResultsFolder = '3-MITgcm-outputs')
     Input:
-      Config (ConfigObject) - run settings (ResultsFolder of the computer, absolute or relative to the remote root;
-                              SimulationName)
+      Config (ConfigObject) - run settings (RemoteRoot (absolute), ResultsFolder (relative to RemoteRoot, or
+                              absolute), SimulationName)
     Output:
-      (str) - '<ResultsFolder>/<SimulationName>' if ResultsFolder is absolute, otherwise
-              '../../../<ResultsFolder>/<SimulationName>' (run/ -> simulation folder -> 2-preprocessing-outputs -> root)
+      (str) - '<RemoteRoot>/<ResultsFolder>/<SimulationName>' (or '<ResultsFolder>/<SimulationName>' if
+              ResultsFolder is absolute); absolute, so the scripts work from any current directory
     """
-    ResultsFolder = PurePosixPath(Config.ResultsFolder)
-    # Relative results folder: go up from run/ to the remote root (the folder the launch script is run from)
-    if not ResultsFolder.is_absolute():
-        ResultsFolder = PurePosixPath('../../..') / ResultsFolder
+    # '/' with an absolute right-hand side keeps only that side, so an absolute ResultsFolder overrides RemoteRoot
+    ResultsFolder = PurePosixPath(Config.RemoteRoot) / Config.ResultsFolder
     return f'{ResultsFolder}/{Config.SimulationName}'
 
 
@@ -49,7 +51,8 @@ def fill_run_config_templates(Config, OutputFolder, MitgcmResultsFolder):
     Inputs:
       Config (ConfigObject)     - run settings (dates, time step, exf_albedo, cdrag_1..3)
       OutputFolder (str)        - simulation folder
-      MitgcmResultsFolder (str) - results folder on the remote computer (see get_mitgcm_results_folder)
+      MitgcmResultsFolder (str) - absolute results folder on the remote computer (see get_mitgcm_results_folder),
+                                  used by the postprocessing scripts; the namelists use the run/results symlink
     Output:
       None - the files are modified in place
     """
@@ -64,9 +67,10 @@ def fill_run_config_templates(Config, OutputFolder, MitgcmResultsFolder):
                          ('cdrag_1', Config.cdrag_1), ('cdrag_2', Config.cdrag_2), ('cdrag_3', Config.cdrag_3)]:
         modify_arguments(f'!{Token}!', Value, ExfPath)
 
-    # Results folders: diagnostics are kept, mnc outputs go to a folder meant to be deleted
-    modify_arguments('!results_folder!', f'{MitgcmResultsFolder}/outputs', os.path.join(RunConfigFolder, 'data.diagnostics'))
-    modify_arguments('!results_folder!', f'{MitgcmResultsFolder}/to_delete', os.path.join(RunConfigFolder, 'data.mnc'))
+    # Results folders, through the short run/results symlink: diagnostics are kept, mnc outputs go to a folder meant
+    # to be deleted
+    modify_arguments('!results_folder!', f'{RESULTS_LINK}/outputs', os.path.join(RunConfigFolder, 'data.diagnostics'))
+    modify_arguments('!results_folder!', f'{RESULTS_LINK}/to_delete', os.path.join(RunConfigFolder, 'data.mnc'))
 
     # Postprocessing scripts run next to MITgcm (reference date in MITgcm's 'YYYY-MM-DD 0:0:0' format)
     ReferenceDate = datetime.strptime(Config.ReferenceDate, '%Y%m%d')

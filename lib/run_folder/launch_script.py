@@ -1,19 +1,26 @@
 """Script that compiles and starts the simulation on the remote computer."""
 import os
 
+from lib.run_folder.templates import RESULTS_LINK
+from lib.run_folder.watchdog import NORMAL_END_TEXT
+
 
 def write_launch_script(OutputFolder, Config, NbCores, MitgcmResultsFolder, NbMakeJobs=4):
     """
-    Write launch_simulation.sh at the root of the simulation folder. kball_laken mirrors the local data layout:
-    the simulation folder is copied to <remote root>/2-preprocessing-outputs/, and from <remote root>
-    'bash 2-preprocessing-outputs/<SimulationName>/launch_simulation.sh' compiles MITgcm, prepares the run folder
-    and starts the simulation in the background with mpirun (results in <remote root>/3-MITgcm-outputs/). Commands follow misc/tips/PenseBete_MITgcmAnne.txt and
-    misc/tips/mitgcm_working_doc.pdf.
+    Write launch_simulation.sh at the root of the simulation folder. The data folder of the remote computer
+    (Config.RemoteRoot, e.g. /storage/lake_zug_transport) mirrors the local data layout: the simulation folder is
+    copied to <RemoteRoot>/2-preprocessing-outputs/<SimulationName>, and
+    'bash <RemoteRoot>/2-preprocessing-outputs/<SimulationName>/launch_simulation.sh', run from any folder, compiles
+    MITgcm, prepares the run folder and starts the simulation in the background with mpirun (results in
+    <RemoteRoot>/3-MITgcm-outputs/<SimulationName>). Commands follow misc/tips/PenseBete_MITgcmAnne.txt and
+    misc/tips/mitgcm_working_doc.pdf. Everything printed until MITgcm is started is also written to launch.log;
+    if a step fails, the end of launch.log is emailed to NotifyEmail.
     Inputs:
       OutputFolder (str)        - simulation folder (contains code/, build/, run/, run_config/)
-      Config (ConfigObject)     - run settings (MitgcmRootDir, BuildOptions, simulation and computer names)
+      Config (ConfigObject)     - run settings (RemoteRoot, MitgcmRootDir, BuildOptions, Watchdog.NotifyEmail,
+                                  simulation and computer names)
       NbCores (int)             - number of MPI processes (Px * Py of SIZE.h)
-      MitgcmResultsFolder (str) - results folder on the remote computer, absolute or relative to run/
+      MitgcmResultsFolder (str) - absolute results folder on the remote computer
                                   (see get_mitgcm_results_folder)
       NbMakeJobs (int)          - number of parallel jobs for 'make'
     Output:
@@ -22,15 +29,12 @@ def write_launch_script(OutputFolder, Config, NbCores, MitgcmResultsFolder, NbMa
     Script = f'''#!/bin/bash
 # Launch the MITgcm simulation '{Config.SimulationName}' on '{Config.ComputerName}'.
 # Written by MAIN_preprocessing.ipynb. Remote layout (same as the local data folder):
-#   <root>/2-preprocessing-outputs/{Config.SimulationName}/   this folder, copied from the local computer
-#   <root>/3-MITgcm-outputs/{Config.SimulationName}/          MITgcm results (created by this script)
-# Run from <root>:
-#   bash 2-preprocessing-outputs/{Config.SimulationName}/launch_simulation.sh
-# The MITgcm folder can be overridden: MITGCM_ROOTDIR=/path/to/MITgcm bash 2-preprocessing-outputs/...
+#   {Config.RemoteRoot}/2-preprocessing-outputs/{Config.SimulationName}/   this folder, copied from the local computer
+#   {Config.RemoteRoot}/3-MITgcm-outputs/{Config.SimulationName}/          MITgcm results (created by this script)
+# Run from any folder:
+#   bash {Config.RemoteRoot}/2-preprocessing-outputs/{Config.SimulationName}/launch_simulation.sh
+# The MITgcm folder can be overridden: MITGCM_ROOTDIR=/path/to/MITgcm bash .../launch_simulation.sh
 set -euo pipefail
-
-# Check that the terminal is in <root> (the folder containing 2-preprocessing-outputs/)
-[ -d 2-preprocessing-outputs ] || {{ echo "Run this script from the folder containing 2-preprocessing-outputs/ and 3-MITgcm-outputs/"; exit 1; }}
 
 # Folder of this script = simulation folder (works from any current directory)
 SIM_DIR="$(cd "$(dirname "${{BASH_SOURCE[0]}}")" && pwd)"
@@ -40,6 +44,37 @@ BUILD_OPTIONS="$MITGCM_ROOTDIR/tools/build_options/{Config.BuildOptions}"
 # Check the MITgcm installation before doing anything
 [ -x "$MITGCM_ROOTDIR/tools/genmake2" ] || {{ echo "MITgcm not found in $MITGCM_ROOTDIR (set MITGCM_ROOTDIR)"; exit 1; }}
 [ -f "$BUILD_OPTIONS" ] || {{ echo "Build options not found: $BUILD_OPTIONS"; exit 1; }}
+
+# Check that the results folder can be created (before the compilation, which takes a few minutes)
+RESULTS_DIR="{MitgcmResultsFolder}"
+mkdir -p "$RESULTS_DIR" 2> /dev/null || {{ echo "Cannot create $RESULTS_DIR (no write access to {Config.RemoteRoot}?)"; exit 1; }}
+
+# Copy of everything printed until MITgcm is started in launch.log (kept if the terminal is closed, downloaded
+# with the results). The terminal's own outputs are saved in fd 3/4 to stop the copy before the progress bar
+exec 3>&1 4>&2
+exec > >(tee "$SIM_DIR/launch.log") 2>&1
+
+# Email (subject $1, body $2) through the 'mail' command; only printed if no address or no 'mail' command
+EMAIL="{Config.Watchdog['NotifyEmail']}"
+send_mail() {{
+  if [ -z "$EMAIL" ] || ! command -v mail > /dev/null; then
+    echo "(no email sent: NotifyEmail empty in config.json or no 'mail' command on $(hostname))"
+  elif printf '%s\\n' "$2" | mail -s "[MITgcm {Config.SimulationName}] $1" "$EMAIL"; then
+    echo "Email '$1' handed to mail for $EMAIL"
+  else
+    echo "Email '$1' NOT sent: mail failed (exit $?)"
+  fi
+}}
+
+# Any failing command from here on (set -e) stops the script: say where, and email the end of launch.log,
+# since the watchdog (which sends the other emails) is not started yet
+on_error() {{
+  trap - ERR
+  echo "=== FAILED at line $1 of launch_simulation.sh: see $SIM_DIR/launch.log ==="
+  send_mail "FAILED during launch (line $1)" "$(tail -n 60 "$SIM_DIR/launch.log")"
+  exit 1
+}}
+trap 'on_error $LINENO' ERR
 
 # 1. Compile MITgcm with the code of this simulation
 echo "=== Compiling MITgcm ($(date '+%Y-%m-%d %H:%M:%S')) ==="
@@ -94,10 +129,11 @@ ln -s ../run_config/* .
 if [ -d ../pickup ]; then ln -s ../pickup/* .; fi
 if [ -d ../postprocessing ]; then ln -s ../postprocessing/* .; fi
 
-# 3. Results folders (paths written in data.diagnostics and data.mnc; relative paths start from run/)
-mkdir -p "{MitgcmResultsFolder}/outputs" "{MitgcmResultsFolder}/to_delete"
-RESULTS_DIR="$(cd "{MitgcmResultsFolder}" && pwd)"
-echo "Results folder: $RESULTS_DIR"
+# 3. Results folders, reached from run/ through the '{RESULTS_LINK}' symlink written in data.diagnostics and
+# data.mnc (MITgcm truncates file names longer than 80 characters, so the absolute path is not used there)
+mkdir -p "$RESULTS_DIR/outputs" "$RESULTS_DIR/to_delete"
+ln -s "$RESULTS_DIR" {RESULTS_LINK}
+echo "Results folder: $RESULTS_DIR (run/{RESULTS_LINK})"
 
 # 4. Start the simulation on {NbCores} cores
 # In the background and detached from the terminal (setsid: own session, nohup, disown), so the terminal can be
@@ -108,22 +144,23 @@ PID=$!
 disown
 echo "$PID" > mitgcm.pid
 
-# 5. Watchdog (watchdog.sh): stops the run on NaN/unrealistic values and sends an email when the run ends.
-# Also detached from the terminal; its messages go to run/watchdog.log
+# 5. Watchdog (watchdog.sh): stops the run on NaN/unrealistic values, emails when it starts and when the run ends.
+# Also detached from the terminal; its messages (and the result of each email) go to run/watchdog.log
 setsid nohup bash ../watchdog.sh "$PID" > watchdog.log 2>&1 < /dev/null &
 disown
-EMAIL="{Config.Watchdog['NotifyEmail']}"
 if [ -z "$EMAIL" ]; then
   echo "Watchdog started, no email (NotifyEmail empty in config.json): see $SIM_DIR/run/watchdog.log"
 elif ! command -v mail > /dev/null; then
-  echo "Watchdog started, but no 'mail' command on this computer: see $SIM_DIR/run/watchdog.log"
+  echo "Watchdog started, but no 'mail' command on $(hostname), so no email: see $SIM_DIR/run/watchdog.log"
 else
-  echo "Watchdog started: email to $EMAIL when the run ends or is stopped"
+  echo "Watchdog started: a 'started' email goes to $EMAIL now, another one when the run ends or is stopped."
+  echo "  No 'started' email within a few minutes (spam folder too) = email does not work from $(hostname):"
+  echo "  see $SIM_DIR/run/watchdog.log and test with: echo test | mail -s test $EMAIL"
 fi
 
 echo "MITgcm started (PID $PID). Useful commands:"
 echo "  tail -f $SIM_DIR/run/STDOUT.0000    # follow the run (MITgcm log of the first core)"
-echo "  grep 'NORMAL END' $SIM_DIR/run/STDOUT.0000    # check that the run finished properly"
+echo "  grep '{NORMAL_END_TEXT}' $SIM_DIR/run/STDOUT.0000    # check that the run finished properly"
 echo "  cat $SIM_DIR/run/output_{Config.SimulationName}.out $SIM_DIR/run/STDERR.0000    # errors (mpirun and MITgcm)"
 echo "  ls $RESULTS_DIR/outputs    # results (3Dsnaps.*)"
 echo "  ps aux | grep mpirun    # list the running simulations"
@@ -131,7 +168,10 @@ echo "  cat $SIM_DIR/run/watchdog.log    # watchdog messages"
 echo "  bash $SIM_DIR/progress.sh    # progress bar (shown below)"
 echo "  kill $PID    # stop this simulation (the watchdog then sends a FAILED email)"
 
-# 6. Progress bar until the end of the run (Ctrl+C or closing the terminal only stops the display)
+# 6. Progress bar until the end of the run (Ctrl+C or closing the terminal only stops the display).
+# MITgcm is started: no failure email from here on, and launch.log stops (the bar would fill it)
+trap - ERR
+exec 1>&3 2>&4 3>&- 4>&-
 echo
 echo "=== Progress (Ctrl+C stops the display, not the simulation) ==="
 bash "$SIM_DIR/progress.sh"

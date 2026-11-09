@@ -1,6 +1,8 @@
 """Progress bar of the simulation, shown on the remote computer."""
 import os
 
+from lib.run_folder.watchdog import FETCH_BAT_NAME, NORMAL_END_TEXT
+
 
 def write_progress_script(OutputFolder, Config, MitgcmResultsFolder, StartTimeInSecond, EndTimeInSecond):
     """
@@ -11,7 +13,7 @@ def write_progress_script(OutputFolder, Config, MitgcmResultsFolder, StartTimeIn
     Inputs:
       OutputFolder (str)        - simulation folder
       Config (ConfigObject)     - run settings (SimulationName, TimeStep [s])
-      MitgcmResultsFolder (str) - results folder on the remote computer, absolute or relative to run/
+      MitgcmResultsFolder (str) - absolute results folder on the remote computer
       StartTimeInSecond (float) - start of the simulation, in seconds from the reference date
       EndTimeInSecond (float)   - end of the simulation, in seconds from the reference date
     Output:
@@ -70,10 +72,11 @@ done
 
 # MITgcm has stopped: properly or not
 echo
-if grep -q "NORMAL END" STDOUT.0000 2> /dev/null; then
+if grep -q "{NORMAL_END_TEXT}" STDOUT.0000 2> /dev/null; then
   echo "Simulation finished (NORMAL END). Results: $(cd "$RESULTS" 2> /dev/null && pwd)"
 else
   echo "MITgcm is not running and did not finish properly: see $SIM_DIR/run/STDERR.0000 and watchdog.log"
+  echo "(results and logs can be downloaded anyway with '{FETCH_BAT_NAME}': answer Y to 'Download anyway?')"
 fi
 '''
     # Unix line endings (the script runs on Linux even if written on Windows), and executable

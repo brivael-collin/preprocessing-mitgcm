@@ -137,7 +137,8 @@ class ConfigObject:
         # Remote computer running MITgcm (kball_laken)
         ComputerConfig = Config['ComputerConfig']
         self.ComputerName = ComputerConfig['Name']
-        self.ResultsFolder = ComputerConfig['ResultsFolder']  # results folder on the remote computer
+        self.RemoteRoot = ComputerConfig['RemoteRoot']        # absolute data folder on the remote computer
+        self.ResultsFolder = ComputerConfig['ResultsFolder']  # results folder, relative to RemoteRoot (or absolute)
         self.MitgcmRootDir = ComputerConfig['MitgcmRootDir']  # MITgcm source folder on the remote computer
         self.BuildOptions = ComputerConfig['BuildOptions']    # file of MITgcm tools/build_options for genmake2
         self.Watchdog = ComputerConfig['Watchdog']            # dict: NotifyEmail, CheckInterval, MonitorFreq, Limits
